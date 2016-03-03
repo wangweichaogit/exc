@@ -1,6 +1,7 @@
+#ifndef _CSEM_HPP_
+#define _CSEM_HPP_
 #include <boost/thread.hpp>
 
-#define nMaxOutbound 5
 class CSemaphore
 {
 private:
@@ -64,6 +65,7 @@ public:
         return fHaveGrant;
     }
 
+//生命周期托管到grant中去，grant对象析构时信号量才减少
     void MoveTo(CSemaphoreGrant &grant) {
         grant.Release();
         grant.sem = sem;
@@ -90,10 +92,4 @@ public:
     }
 };
 
-int main()
-{
-	static CSemaphore *semOutbound = NULL;
-	semOutbound = new CSemaphore(nMaxOutbound);
-	
-	return 0;
-}
+#endif
