@@ -50,10 +50,11 @@ void handle_accept(boost::shared_ptr<ip::tcp::acceptor> acceptor,acceptimpl *imp
 	
 	//新建一个异步连接
 		
+	sleep(10);
 	acceptimpl  *impl2 = new acceptimpl(acceptor->get_io_service());
 	acceptor->async_accept(impl2->socket,boost::bind(&handle_accept,acceptor,impl2));
 	
-	NewThread(function,(void *)impl);
+//	NewThread(function,(void *)impl);
 }
 int main()
 {
