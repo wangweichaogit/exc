@@ -47,7 +47,7 @@ void do_proxy(int sockfd)
 {
 	int forwardsockfd,ret;
 	int len;
-	char buf[4096];
+	char buf[65536];
 	fd_set rdfdset;
 	if ((forwardsockfd = socket(AF_INET,SOCK_STREAM,0)) < 0)
 	  printf("failed to create socket to host\n");
