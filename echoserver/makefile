@@ -5,6 +5,6 @@ all:
 	g++ -std=c++11 echoclient.cc $(SRC) -o echoclient -Wall  -lpthread
 
 clean:
-	rm -rf echoclient echoserver
+	rm -rf echoclient echoserver discard
 
 .PHONY:clean

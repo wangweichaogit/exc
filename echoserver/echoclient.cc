@@ -6,12 +6,12 @@ int main(int argc,char *argv[])
 {
 	if (argc < 3)
 	{
-		printf("usage:%s hostname message_length\n",argv[0]);
+		printf("usage:%s hostname port message_length\n",argv[0]);
 		return 0;
 	}
 	
-	const int len = atoi(argv[2]);
-	InetAddress addr(3007);
+	const int len = atoi(argv[3]);
+	InetAddress addr(atoi(argv[2]));
 	if (!InetAddress::resolve(argv[1], &addr))
   {
     printf("Unable to resolve %s\n", argv[1]);
