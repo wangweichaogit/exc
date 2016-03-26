@@ -117,7 +117,7 @@ int search(skiplist *sl,int key)
             p=q;  
         }  
     }  
-    return NULL;  
+    return 0;  
 }  
     
 //É¾³ıÖ¸¶¨µÄkey  
