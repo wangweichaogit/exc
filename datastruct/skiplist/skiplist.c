@@ -12,7 +12,8 @@ typedef enum{false,true} bool;
 typedef  struct nodeStructure  
 {  
     int key;  
-    int value;  
+    int value; 
+    //Ö¸ÕëÊı×é 
     struct nodeStructure *forward[1];  
 }nodeStructure;  
     

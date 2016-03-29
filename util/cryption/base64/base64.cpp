@@ -1,0 +1,233 @@
+//-- --Base64.cpp
+
+#include "base64.h"
+
+string ZBase64::Encode(const unsigned char* Data,int DataByte)
+{
+    //编码表
+    const char EncodeTable[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    //返回值
+    string strEncode;
+    unsigned char Tmp[4]={0};
+    int LineLength=0;
+    for(int i=0;i<(int)(DataByte / 3);i++)
+    {
+        Tmp[1] = *Data++;
+        Tmp[2] = *Data++;
+        Tmp[3] = *Data++;
+        strEncode+= EncodeTable[Tmp[1] >> 2];
+        strEncode+= EncodeTable[((Tmp[1] << 4) | (Tmp[2] >> 4)) & 0x3F];
+        strEncode+= EncodeTable[((Tmp[2] << 2) | (Tmp[3] >> 6)) & 0x3F];
+        strEncode+= EncodeTable[Tmp[3] & 0x3F];
+        if(LineLength+=4,LineLength==76) {strEncode+="\r\n";LineLength=0;}
+    }
+    //对剩余数据进行编码
+    int Mod=DataByte % 3;
+    if(Mod==1)
+    {
+        Tmp[1] = *Data++;
+        strEncode+= EncodeTable[(Tmp[1] & 0xFC) >> 2];
+        strEncode+= EncodeTable[((Tmp[1] & 0x03) << 4)];
+        strEncode+= "==";
+    }
+    else if(Mod==2)
+    {
+        Tmp[1] = *Data++;
+        Tmp[2] = *Data++;
+        strEncode+= EncodeTable[(Tmp[1] & 0xFC) >> 2];
+        strEncode+= EncodeTable[((Tmp[1] & 0x03) << 4) | ((Tmp[2] & 0xF0) >> 4)];
+        strEncode+= EncodeTable[((Tmp[2] & 0x0F) << 2)];
+        strEncode+= "=";
+    }
+    
+    return strEncode;
+}
+
+string ZBase64::Decode(const char* Data,int DataByte,int& OutByte)
+{
+    //解码表
+    const char DecodeTable[] =
+    {
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			 // '+'
+			 0, 0,
+			 // '/'
+			 53, 54, 55, 56, 57, 58, 59, 60, 61, // '0'-'9'
+			 0, 0, 0, 0, 0, 0,
+			 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+			 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // 'A'-'Z'
+			 0, 0, 0, 0, 0,
+			 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+			 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // 'a'-'z'
+    };
+    //返回值
+    string strDecode;
+    int nValue;
+    int i= 0;
+    while (i < DataByte)
+    {
+        if (*Data != '\r' && *Data!='\n')
+        {
+            nValue = DecodeTable[*Data++] << 18;
+            nValue += DecodeTable[*Data++] << 12;
+            strDecode+=(nValue & 0x00FF0000) >> 16;
+            OutByte++;
+            if (*Data != '=')
+            {
+                nValue += DecodeTable[*Data++] << 6;
+                strDecode+=(nValue & 0x0000FF00) >> 8;
+                OutByte++;
+                if (*Data != '=')
+                {
+                    nValue += DecodeTable[*Data++];
+                    strDecode+=nValue & 0x000000FF;
+                    OutByte++;
+                }
+            }
+            i += 4;
+        }
+        else// 回车换行,跳过
+        {
+            Data++;
+            i++;
+        }
+	}
+    return strDecode;
+}
+
+string ZBase64::Decode( const char * base64)
+{
+    int i, j;
+    const char * base64char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    unsigned char k;
+   	string strDecode;
+    unsigned char temp[4];
+    for ( i = 0, j = 0; base64[i] != '\0' ; i += 4 )
+    {
+        memset( temp, 0xFF, sizeof(temp) );
+        for ( k = 0 ; k < 64 ; k ++ )
+        {
+            if ( base64char[k] == base64[i] )
+                temp[0]= k;
+        }
+        for ( k = 0 ; k < 64 ; k ++ )
+        {
+            if ( base64char[k] == base64[i+1] )
+                temp[1]= k;
+        }
+        for ( k = 0 ; k < 64 ; k ++ )
+        {
+            if ( base64char[k] == base64[i+2] )
+                temp[2]= k;
+        }
+        for ( k = 0 ; k < 64 ; k ++ )
+        {
+            if ( base64char[k] == base64[i+3] )
+                temp[3]= k;
+        }
+
+        strDecode[j++] = ((unsigned char)(((unsigned char)(temp[0] << 2))&0xFC)) |
+                ((unsigned char)((unsigned char)(temp[1]>>4)&0x03));
+        if ( base64[i+2] == '=' )
+            break;
+
+        strDecode[j++] = ((unsigned char)(((unsigned char)(temp[1] << 4))&0xF0)) |
+                ((unsigned char)((unsigned char)(temp[2]>>2)&0x0F));
+        if ( base64[i+3] == '=' )
+            break;
+
+        strDecode[j++] = ((unsigned char)(((unsigned char)(temp[2] << 6))&0xF0)) |
+                ((unsigned char)(temp[3]&0x3F));
+    }
+    return strDecode;
+}
+
+
+#if 0
+const char * base64char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+char * base64_encode( const unsigned char * bindata, char * base64, int binlength )
+{
+    int i, j;
+    unsigned char current;
+
+    for ( i = 0, j = 0 ; i < binlength ; i += 3 )
+    {
+        current = (bindata[i] >> 2) ;
+        current &= (unsigned char)0x3F;
+        base64[j++] = base64char[(int)current];
+
+        current = ( (unsigned char)(bindata[i] << 4 ) ) & ( (unsigned char)0x30 ) ;
+        if ( i + 1 >= binlength )
+        {
+            base64[j++] = base64char[(int)current];
+            base64[j++] = '=';
+            base64[j++] = '=';
+            break;
+        }
+        current |= ( (unsigned char)(bindata[i+1] >> 4) ) & ( (unsigned char) 0x0F );
+        base64[j++] = base64char[(int)current];
+
+        current = ( (unsigned char)(bindata[i+1] << 2) ) & ( (unsigned char)0x3C ) ;
+        if ( i + 2 >= binlength )
+        {
+            base64[j++] = base64char[(int)current];
+            base64[j++] = '=';
+            break;
+        }
+        current |= ( (unsigned char)(bindata[i+2] >> 6) ) & ( (unsigned char) 0x03 );
+        base64[j++] = base64char[(int)current];
+
+        current = ( (unsigned char)bindata[i+2] ) & ( (unsigned char)0x3F ) ;
+        base64[j++] = base64char[(int)current];
+    }
+    base64[j] = '\0';
+    return base64;
+}
+
+int base64_decode( const char * base64, unsigned char * bindata )
+{
+    int i, j;
+    unsigned char k;
+    unsigned char temp[4];
+    for ( i = 0, j = 0; base64[i] != '\0' ; i += 4 )
+    {
+        memset( temp, 0xFF, sizeof(temp) );
+        for ( k = 0 ; k < 64 ; k ++ )
+        {
+            if ( base64char[k] == base64[i] )
+                temp[0]= k;
+        }
+        for ( k = 0 ; k < 64 ; k ++ )
+        {
+            if ( base64char[k] == base64[i+1] )
+                temp[1]= k;
+        }
+        for ( k = 0 ; k < 64 ; k ++ )
+        {
+            if ( base64char[k] == base64[i+2] )
+                temp[2]= k;
+        }
+        for ( k = 0 ; k < 64 ; k ++ )
+        {
+            if ( base64char[k] == base64[i+3] )
+                temp[3]= k;
+        }
+
+        bindata[j++] = ((unsigned char)(((unsigned char)(temp[0] << 2))&0xFC)) |
+                ((unsigned char)((unsigned char)(temp[1]>>4)&0x03));
+        if ( base64[i+2] == '=' )
+            break;
+
+        bindata[j++] = ((unsigned char)(((unsigned char)(temp[1] << 4))&0xF0)) |
+                ((unsigned char)((unsigned char)(temp[2]>>2)&0x0F));
+        if ( base64[i+3] == '=' )
+            break;
+
+        bindata[j++] = ((unsigned char)(((unsigned char)(temp[2] << 6))&0xF0)) |
+                ((unsigned char)(temp[3]&0x3F));
+    }
+    return j;
+}
+#endif
