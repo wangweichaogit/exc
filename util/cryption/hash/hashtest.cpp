@@ -1,4 +1,4 @@
-#include "sha1.h"
+#include "hash.h"
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
@@ -12,11 +12,11 @@ int main(int argc,const char *argv[])
 	}
 	string str(argv[1]);
 
-	CSHA1 sha1;
-	unsigned char buf[sha1.OUTPUT_SIZE] = { 0};
-	sha1.Reset();
-	sha1.Write((const unsigned char *)str.c_str(),str.length());
-	sha1.Finalize(buf);
+	CHash256 hash256;
+	unsigned char buf[hash256.OUTPUT_SIZE] = { 0};
+	hash256.Reset();
+	hash256.Write((const unsigned char *)str.c_str(),str.length());
+	hash256.Finalize(buf);
 	for (int i = 0 ; i < sizeof(buf); i++)
 		printf("%02X",buf[i]);
 		cout<<endl;

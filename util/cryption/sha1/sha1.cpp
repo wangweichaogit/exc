@@ -1,246 +1,208 @@
-//----------------------------------------------------------
-//SHA1.CPP
-#include "stdafx.h"
-#include "SHA1.h"
 
-#ifdef SHA1_UTILITY_FUNCTIONS
-#define SHA1_MAX_FILE_BUFFER 8000
-#endif
 
-// Rotate x bits to the left
-#ifndef ROL32
-#ifdef _MSC_VER
-#define ROL32(_val32, _nBits) _rotl(_val32, _nBits)
-#else
-#define ROL32(_val32, _nBits) (((_val32)<<(_nBits))|((_val32)>>(32-(_nBits))))
-#endif
-#endif
+#include "sha1.h"
+#include <string.h>
 
-#ifdef SHA1_LITTLE_ENDIAN
-#define SHABLK0(i) (m_block->l[i] = \
-    (ROL32(m_block->l[i],24) & 0xFF00FF00) | (ROL32(m_block->l[i],8) & 0x00FF00FF))
-#else
-#define SHABLK0(i) (m_block->l[i])
-#endif
-
-#define SHABLK(i) (m_block->l[i&15] = ROL32(m_block->l[(i+13)&15] ^ m_block->l[(i+8)&15] \
-    ^ m_block->l[(i+2)&15] ^ m_block->l[i&15],1))
-
-// SHA-1 rounds
-#define _R0(v,w,x,y,z,i) { z+=((w&(x^y))^y)+SHABLK0(i)+0x5A827999+ROL32(v,5); w=ROL32(w,30); }
-#define _R1(v,w,x,y,z,i) { z+=((w&(x^y))^y)+SHABLK(i)+0x5A827999+ROL32(v,5); w=ROL32(w,30); }
-#define _R2(v,w,x,y,z,i) { z+=(w^x^y)+SHABLK(i)+0x6ED9EBA1+ROL32(v,5); w=ROL32(w,30); }
-#define _R3(v,w,x,y,z,i) { z+=(((w|x)&y)|(w&x))+SHABLK(i)+0x8F1BBCDC+ROL32(v,5); w=ROL32(w,30); }
-#define _R4(v,w,x,y,z,i) { z+=(w^x^y)+SHABLK(i)+0xCA62C1D6+ROL32(v,5); w=ROL32(w,30); }
-
-CSHA1::CSHA1()
+uint32_t static inline ReadBE32(const unsigned char* ptr)
 {
-    m_block = (SHA1_WORKSPACE_BLOCK *)m_workspace;
-
-    Reset();
+    return be32toh(*((uint32_t*)ptr));
 }
 
-CSHA1::~CSHA1()
+void static inline WriteBE32(unsigned char* ptr, uint32_t x)
 {
-    Reset();
+    *((uint32_t*)ptr) = htobe32(x);
 }
 
-void CSHA1::Reset()
+void static inline WriteBE64(unsigned char* ptr, uint64_t x)
 {
-    // SHA1 initialization constants
-    m_state[0] = 0x67452301;
-    m_state[1] = 0xEFCDAB89;
-    m_state[2] = 0x98BADCFE;
-    m_state[3] = 0x10325476;
-    m_state[4] = 0xC3D2E1F0;
-
-    m_count[0] = 0;
-    m_count[1] = 0;
+    *((uint64_t*)ptr) = htobe64(x);
+}
+// Internal implementation code.
+namespace
+{
+/// Internal SHA-1 implementation.
+namespace sha1
+{
+/** One round of SHA-1. */
+void inline Round(uint32_t a, uint32_t& b, uint32_t c, uint32_t d, uint32_t& e, uint32_t f, uint32_t k, uint32_t w)
+{
+    e += ((a << 5) | (a >> 27)) + f + k + w;
+    b = (b << 30) | (b >> 2);
 }
 
-void CSHA1::Transform(UINT_32 *state, UINT_8 *buffer)
+uint32_t inline f1(uint32_t b, uint32_t c, uint32_t d) { return d ^ (b & (c ^ d)); }
+uint32_t inline f2(uint32_t b, uint32_t c, uint32_t d) { return b ^ c ^ d; }
+uint32_t inline f3(uint32_t b, uint32_t c, uint32_t d) { return (b & c) | (d & (b | c)); }
+
+uint32_t inline left(uint32_t x) { return (x << 1) | (x >> 31); }
+
+/** Initialize SHA-1 state. */
+void inline Initialize(uint32_t* s)
 {
-    // Copy state[] to working vars
-    UINT_32 a = state[0], b = state[1], c = state[2], d = state[3], e = state[4];
-
-    memcpy(m_block, buffer, 64);
-
-    // 4 rounds of 20 operations each. Loop unrolled.
-    _R0(a,b,c,d,e, 0); _R0(e,a,b,c,d, 1); _R0(d,e,a,b,c, 2); _R0(c,d,e,a,b, 3);
-    _R0(b,c,d,e,a, 4); _R0(a,b,c,d,e, 5); _R0(e,a,b,c,d, 6); _R0(d,e,a,b,c, 7);
-    _R0(c,d,e,a,b, 8); _R0(b,c,d,e,a, 9); _R0(a,b,c,d,e,10); _R0(e,a,b,c,d,11);
-    _R0(d,e,a,b,c,12); _R0(c,d,e,a,b,13); _R0(b,c,d,e,a,14); _R0(a,b,c,d,e,15);
-    _R1(e,a,b,c,d,16); _R1(d,e,a,b,c,17); _R1(c,d,e,a,b,18); _R1(b,c,d,e,a,19);
-    _R2(a,b,c,d,e,20); _R2(e,a,b,c,d,21); _R2(d,e,a,b,c,22); _R2(c,d,e,a,b,23);
-    _R2(b,c,d,e,a,24); _R2(a,b,c,d,e,25); _R2(e,a,b,c,d,26); _R2(d,e,a,b,c,27);
-    _R2(c,d,e,a,b,28); _R2(b,c,d,e,a,29); _R2(a,b,c,d,e,30); _R2(e,a,b,c,d,31);
-    _R2(d,e,a,b,c,32); _R2(c,d,e,a,b,33); _R2(b,c,d,e,a,34); _R2(a,b,c,d,e,35);
-    _R2(e,a,b,c,d,36); _R2(d,e,a,b,c,37); _R2(c,d,e,a,b,38); _R2(b,c,d,e,a,39);
-    _R3(a,b,c,d,e,40); _R3(e,a,b,c,d,41); _R3(d,e,a,b,c,42); _R3(c,d,e,a,b,43);
-    _R3(b,c,d,e,a,44); _R3(a,b,c,d,e,45); _R3(e,a,b,c,d,46); _R3(d,e,a,b,c,47);
-    _R3(c,d,e,a,b,48); _R3(b,c,d,e,a,49); _R3(a,b,c,d,e,50); _R3(e,a,b,c,d,51);
-    _R3(d,e,a,b,c,52); _R3(c,d,e,a,b,53); _R3(b,c,d,e,a,54); _R3(a,b,c,d,e,55);
-    _R3(e,a,b,c,d,56); _R3(d,e,a,b,c,57); _R3(c,d,e,a,b,58); _R3(b,c,d,e,a,59);
-    _R4(a,b,c,d,e,60); _R4(e,a,b,c,d,61); _R4(d,e,a,b,c,62); _R4(c,d,e,a,b,63);
-    _R4(b,c,d,e,a,64); _R4(a,b,c,d,e,65); _R4(e,a,b,c,d,66); _R4(d,e,a,b,c,67);
-    _R4(c,d,e,a,b,68); _R4(b,c,d,e,a,69); _R4(a,b,c,d,e,70); _R4(e,a,b,c,d,71);
-    _R4(d,e,a,b,c,72); _R4(c,d,e,a,b,73); _R4(b,c,d,e,a,74); _R4(a,b,c,d,e,75);
-    _R4(e,a,b,c,d,76); _R4(d,e,a,b,c,77); _R4(c,d,e,a,b,78); _R4(b,c,d,e,a,79);
-
-    // Add the working vars back into state
-    state[0] += a;
-    state[1] += b;
-    state[2] += c;
-    state[3] += d;
-    state[4] += e;
-
-    // Wipe variables
-#ifdef SHA1_WIPE_VARIABLES
-    a = b = c = d = e = 0;
-#endif
+    s[0] = 0x67452301ul;
+    s[1] = 0xEFCDAB89ul;
+    s[2] = 0x98BADCFEul;
+    s[3] = 0x10325476ul;
+    s[4] = 0xC3D2E1F0ul;
 }
 
-// Use this function to hash in binary data and strings
-void CSHA1::Update(UINT_8 *data, UINT_32 len)
+const uint32_t k1 = 0x5A827999ul;
+const uint32_t k2 = 0x6ED9EBA1ul;
+const uint32_t k3 = 0x8F1BBCDCul;
+const uint32_t k4 = 0xCA62C1D6ul;
+
+/** Perform a SHA-1 transformation, processing a 64-byte chunk. */
+void Transform(uint32_t* s, const unsigned char* chunk)
 {
-    UINT_32 i, j;
+    uint32_t a = s[0], b = s[1], c = s[2], d = s[3], e = s[4];
+    uint32_t w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15;
 
-    j = (m_count[0] >> 3) & 63;
+    Round(a, b, c, d, e, f1(b, c, d), k1, w0 = ReadBE32(chunk + 0));
+    Round(e, a, b, c, d, f1(a, b, c), k1, w1 = ReadBE32(chunk + 4));
+    Round(d, e, a, b, c, f1(e, a, b), k1, w2 = ReadBE32(chunk + 8));
+    Round(c, d, e, a, b, f1(d, e, a), k1, w3 = ReadBE32(chunk + 12));
+    Round(b, c, d, e, a, f1(c, d, e), k1, w4 = ReadBE32(chunk + 16));
+    Round(a, b, c, d, e, f1(b, c, d), k1, w5 = ReadBE32(chunk + 20));
+    Round(e, a, b, c, d, f1(a, b, c), k1, w6 = ReadBE32(chunk + 24));
+    Round(d, e, a, b, c, f1(e, a, b), k1, w7 = ReadBE32(chunk + 28));
+    Round(c, d, e, a, b, f1(d, e, a), k1, w8 = ReadBE32(chunk + 32));
+    Round(b, c, d, e, a, f1(c, d, e), k1, w9 = ReadBE32(chunk + 36));
+    Round(a, b, c, d, e, f1(b, c, d), k1, w10 = ReadBE32(chunk + 40));
+    Round(e, a, b, c, d, f1(a, b, c), k1, w11 = ReadBE32(chunk + 44));
+    Round(d, e, a, b, c, f1(e, a, b), k1, w12 = ReadBE32(chunk + 48));
+    Round(c, d, e, a, b, f1(d, e, a), k1, w13 = ReadBE32(chunk + 52));
+    Round(b, c, d, e, a, f1(c, d, e), k1, w14 = ReadBE32(chunk + 56));
+    Round(a, b, c, d, e, f1(b, c, d), k1, w15 = ReadBE32(chunk + 60));
 
-    if((m_count[0] += len << 3) < (len << 3)) m_count[1]++;
+    Round(e, a, b, c, d, f1(a, b, c), k1, w0 = left(w0 ^ w13 ^ w8 ^ w2));
+    Round(d, e, a, b, c, f1(e, a, b), k1, w1 = left(w1 ^ w14 ^ w9 ^ w3));
+    Round(c, d, e, a, b, f1(d, e, a), k1, w2 = left(w2 ^ w15 ^ w10 ^ w4));
+    Round(b, c, d, e, a, f1(c, d, e), k1, w3 = left(w3 ^ w0 ^ w11 ^ w5));
+    Round(a, b, c, d, e, f2(b, c, d), k2, w4 = left(w4 ^ w1 ^ w12 ^ w6));
+    Round(e, a, b, c, d, f2(a, b, c), k2, w5 = left(w5 ^ w2 ^ w13 ^ w7));
+    Round(d, e, a, b, c, f2(e, a, b), k2, w6 = left(w6 ^ w3 ^ w14 ^ w8));
+    Round(c, d, e, a, b, f2(d, e, a), k2, w7 = left(w7 ^ w4 ^ w15 ^ w9));
+    Round(b, c, d, e, a, f2(c, d, e), k2, w8 = left(w8 ^ w5 ^ w0 ^ w10));
+    Round(a, b, c, d, e, f2(b, c, d), k2, w9 = left(w9 ^ w6 ^ w1 ^ w11));
+    Round(e, a, b, c, d, f2(a, b, c), k2, w10 = left(w10 ^ w7 ^ w2 ^ w12));
+    Round(d, e, a, b, c, f2(e, a, b), k2, w11 = left(w11 ^ w8 ^ w3 ^ w13));
+    Round(c, d, e, a, b, f2(d, e, a), k2, w12 = left(w12 ^ w9 ^ w4 ^ w14));
+    Round(b, c, d, e, a, f2(c, d, e), k2, w13 = left(w13 ^ w10 ^ w5 ^ w15));
+    Round(a, b, c, d, e, f2(b, c, d), k2, w14 = left(w14 ^ w11 ^ w6 ^ w0));
+    Round(e, a, b, c, d, f2(a, b, c), k2, w15 = left(w15 ^ w12 ^ w7 ^ w1));
 
-    m_count[1] += (len >> 29);
+    Round(d, e, a, b, c, f2(e, a, b), k2, w0 = left(w0 ^ w13 ^ w8 ^ w2));
+    Round(c, d, e, a, b, f2(d, e, a), k2, w1 = left(w1 ^ w14 ^ w9 ^ w3));
+    Round(b, c, d, e, a, f2(c, d, e), k2, w2 = left(w2 ^ w15 ^ w10 ^ w4));
+    Round(a, b, c, d, e, f2(b, c, d), k2, w3 = left(w3 ^ w0 ^ w11 ^ w5));
+    Round(e, a, b, c, d, f2(a, b, c), k2, w4 = left(w4 ^ w1 ^ w12 ^ w6));
+    Round(d, e, a, b, c, f2(e, a, b), k2, w5 = left(w5 ^ w2 ^ w13 ^ w7));
+    Round(c, d, e, a, b, f2(d, e, a), k2, w6 = left(w6 ^ w3 ^ w14 ^ w8));
+    Round(b, c, d, e, a, f2(c, d, e), k2, w7 = left(w7 ^ w4 ^ w15 ^ w9));
+    Round(a, b, c, d, e, f3(b, c, d), k3, w8 = left(w8 ^ w5 ^ w0 ^ w10));
+    Round(e, a, b, c, d, f3(a, b, c), k3, w9 = left(w9 ^ w6 ^ w1 ^ w11));
+    Round(d, e, a, b, c, f3(e, a, b), k3, w10 = left(w10 ^ w7 ^ w2 ^ w12));
+    Round(c, d, e, a, b, f3(d, e, a), k3, w11 = left(w11 ^ w8 ^ w3 ^ w13));
+    Round(b, c, d, e, a, f3(c, d, e), k3, w12 = left(w12 ^ w9 ^ w4 ^ w14));
+    Round(a, b, c, d, e, f3(b, c, d), k3, w13 = left(w13 ^ w10 ^ w5 ^ w15));
+    Round(e, a, b, c, d, f3(a, b, c), k3, w14 = left(w14 ^ w11 ^ w6 ^ w0));
+    Round(d, e, a, b, c, f3(e, a, b), k3, w15 = left(w15 ^ w12 ^ w7 ^ w1));
 
-    if((j + len) > 63)
-    {
-        i = 64 - j;
-        memcpy(&m_buffer[j], data, i);
-        Transform(m_state, m_buffer);
+    Round(c, d, e, a, b, f3(d, e, a), k3, w0 = left(w0 ^ w13 ^ w8 ^ w2));
+    Round(b, c, d, e, a, f3(c, d, e), k3, w1 = left(w1 ^ w14 ^ w9 ^ w3));
+    Round(a, b, c, d, e, f3(b, c, d), k3, w2 = left(w2 ^ w15 ^ w10 ^ w4));
+    Round(e, a, b, c, d, f3(a, b, c), k3, w3 = left(w3 ^ w0 ^ w11 ^ w5));
+    Round(d, e, a, b, c, f3(e, a, b), k3, w4 = left(w4 ^ w1 ^ w12 ^ w6));
+    Round(c, d, e, a, b, f3(d, e, a), k3, w5 = left(w5 ^ w2 ^ w13 ^ w7));
+    Round(b, c, d, e, a, f3(c, d, e), k3, w6 = left(w6 ^ w3 ^ w14 ^ w8));
+    Round(a, b, c, d, e, f3(b, c, d), k3, w7 = left(w7 ^ w4 ^ w15 ^ w9));
+    Round(e, a, b, c, d, f3(a, b, c), k3, w8 = left(w8 ^ w5 ^ w0 ^ w10));
+    Round(d, e, a, b, c, f3(e, a, b), k3, w9 = left(w9 ^ w6 ^ w1 ^ w11));
+    Round(c, d, e, a, b, f3(d, e, a), k3, w10 = left(w10 ^ w7 ^ w2 ^ w12));
+    Round(b, c, d, e, a, f3(c, d, e), k3, w11 = left(w11 ^ w8 ^ w3 ^ w13));
+    Round(a, b, c, d, e, f2(b, c, d), k4, w12 = left(w12 ^ w9 ^ w4 ^ w14));
+    Round(e, a, b, c, d, f2(a, b, c), k4, w13 = left(w13 ^ w10 ^ w5 ^ w15));
+    Round(d, e, a, b, c, f2(e, a, b), k4, w14 = left(w14 ^ w11 ^ w6 ^ w0));
+    Round(c, d, e, a, b, f2(d, e, a), k4, w15 = left(w15 ^ w12 ^ w7 ^ w1));
 
-        for(; i + 63 < len; i += 64) Transform(m_state, &data[i]);
+    Round(b, c, d, e, a, f2(c, d, e), k4, w0 = left(w0 ^ w13 ^ w8 ^ w2));
+    Round(a, b, c, d, e, f2(b, c, d), k4, w1 = left(w1 ^ w14 ^ w9 ^ w3));
+    Round(e, a, b, c, d, f2(a, b, c), k4, w2 = left(w2 ^ w15 ^ w10 ^ w4));
+    Round(d, e, a, b, c, f2(e, a, b), k4, w3 = left(w3 ^ w0 ^ w11 ^ w5));
+    Round(c, d, e, a, b, f2(d, e, a), k4, w4 = left(w4 ^ w1 ^ w12 ^ w6));
+    Round(b, c, d, e, a, f2(c, d, e), k4, w5 = left(w5 ^ w2 ^ w13 ^ w7));
+    Round(a, b, c, d, e, f2(b, c, d), k4, w6 = left(w6 ^ w3 ^ w14 ^ w8));
+    Round(e, a, b, c, d, f2(a, b, c), k4, w7 = left(w7 ^ w4 ^ w15 ^ w9));
+    Round(d, e, a, b, c, f2(e, a, b), k4, w8 = left(w8 ^ w5 ^ w0 ^ w10));
+    Round(c, d, e, a, b, f2(d, e, a), k4, w9 = left(w9 ^ w6 ^ w1 ^ w11));
+    Round(b, c, d, e, a, f2(c, d, e), k4, w10 = left(w10 ^ w7 ^ w2 ^ w12));
+    Round(a, b, c, d, e, f2(b, c, d), k4, w11 = left(w11 ^ w8 ^ w3 ^ w13));
+    Round(e, a, b, c, d, f2(a, b, c), k4, w12 = left(w12 ^ w9 ^ w4 ^ w14));
+    Round(d, e, a, b, c, f2(e, a, b), k4, left(w13 ^ w10 ^ w5 ^ w15));
+    Round(c, d, e, a, b, f2(d, e, a), k4, left(w14 ^ w11 ^ w6 ^ w0));
+    Round(b, c, d, e, a, f2(c, d, e), k4, left(w15 ^ w12 ^ w7 ^ w1));
 
-        j = 0;
-    }
-    else i = 0;
-
-    memcpy(&m_buffer[j], &data[i], len - i);
+    s[0] += a;
+    s[1] += b;
+    s[2] += c;
+    s[3] += d;
+    s[4] += e;
 }
 
-#ifdef SHA1_UTILITY_FUNCTIONS
-// Hash in file contents
-bool CSHA1::HashFile(char *szFileName)
+} // namespace sha1
+
+} // namespace
+
+////// SHA1
+
+CSHA1::CSHA1() : bytes(0)
 {
-    unsigned long ulFileSize, ulRest, ulBlocks;
-    unsigned long i;
-    UINT_8 uData[SHA1_MAX_FILE_BUFFER];
-    FILE *fIn;
-
-    if(szFileName == NULL) return false;
-
-    fIn = fopen(szFileName, "rb");
-    if(fIn == NULL) return false;
-
-    fseek(fIn, 0, SEEK_END);
-    ulFileSize = (unsigned long)ftell(fIn);
-    fseek(fIn, 0, SEEK_SET);
-
-    if(ulFileSize != 0)
-    {
-        ulBlocks = ulFileSize / SHA1_MAX_FILE_BUFFER;
-        ulRest = ulFileSize % SHA1_MAX_FILE_BUFFER;
-    }
-    else
-    {
-        ulBlocks = 0;
-        ulRest = 0;
-    }
-
-    for(i = 0; i < ulBlocks; i++)
-    {
-        fread(uData, 1, SHA1_MAX_FILE_BUFFER, fIn);
-        Update((UINT_8 *)uData, SHA1_MAX_FILE_BUFFER);
-    }
-
-    if(ulRest != 0)
-    {
-        fread(uData, 1, ulRest, fIn);
-        Update((UINT_8 *)uData, ulRest);
-    }
-
-    fclose(fIn); fIn = NULL;
-    return true;
-}
-#endif
-
-void CSHA1::Final()
-{
-    UINT_32 i;
-    UINT_8 finalcount[8];
-
-    for(i = 0; i < 8; i++)
-        finalcount[i] = (UINT_8)((m_count[((i >= 4) ? 0 : 1)]
-            >> ((3 - (i & 3)) * 8) ) & 255); // Endian independent
-
-    Update((UINT_8 *)"\200", 1);
-
-    while ((m_count[0] & 504) != 448)
-        Update((UINT_8 *)"\0", 1);
-
-    Update(finalcount, 8); // Cause a SHA1Transform()
-
-    for(i = 0; i < 20; i++)
-    {
-        m_digest[i] = (UINT_8)((m_state[i >> 2] >> ((3 - (i & 3)) * 8) ) & 255);
-    }
-
-    // Wipe variables for security reasons
-#ifdef SHA1_WIPE_VARIABLES
-    i = 0;
-    memset(m_buffer, 0, 64);
-    memset(m_state, 0, 20);
-    memset(m_count, 0, 8);
-    memset(finalcount, 0, 8);
-    Transform(m_state, m_buffer);
-#endif
+    sha1::Initialize(s);
 }
 
-#ifdef SHA1_UTILITY_FUNCTIONS
-// Get the final hash as a pre-formatted string
-void CSHA1::ReportHash(char *szReport, unsigned char uReportType)
+CSHA1& CSHA1::Write(const unsigned char* data, size_t len)
 {
-    unsigned char i;
-    char szTemp[16];
-
-    if(szReport == NULL) return;
-
-    if(uReportType == REPORT_HEX)
-    {
-        sprintf(szTemp, "%02X", m_digest[0]);
-        strcat(szReport, szTemp);
-
-        for(i = 1; i < 20; i++)
-        {
-            sprintf(szTemp, " %02X", m_digest[i]);
-            strcat(szReport, szTemp);
-        }
+    const unsigned char* end = data + len;
+    size_t bufsize = bytes % 64;
+    if (bufsize && bufsize + len >= 64) {
+        // Fill the buffer, and process it.
+        memcpy(buf + bufsize, data, 64 - bufsize);
+        bytes += 64 - bufsize;
+        data += 64 - bufsize;
+        sha1::Transform(s, buf);
+        bufsize = 0;
     }
-    else if(uReportType == REPORT_DIGIT)
-    {
-        sprintf(szTemp, "%u", m_digest[0]);
-        strcat(szReport, szTemp);
-
-        for(i = 1; i < 20; i++)
-        {
-            sprintf(szTemp, " %u", m_digest[i]);
-            strcat(szReport, szTemp);
-        }
+    while (end >= data + 64) {
+        // Process full chunks directly from the source.
+        sha1::Transform(s, data);
+        bytes += 64;
+        data += 64;
     }
-    else strcpy(szReport, "Error: Unknown report type!");
+    if (end > data) {
+        // Fill the buffer with what remains.
+        memcpy(buf + bufsize, data, end - data);
+        bytes += end - data;
+    }
+    return *this;
 }
-#endif
 
-// Get the raw message digest
-void CSHA1::GetHash(UINT_8 *puDest)
+void CSHA1::Finalize(unsigned char hash[OUTPUT_SIZE])
 {
-    memcpy(puDest, m_digest, 20);
+    static const unsigned char pad[64] = {0x80};
+    unsigned char sizedesc[8];
+    WriteBE64(sizedesc, bytes << 3);
+    Write(pad, 1 + ((119 - (bytes % 64)) % 64));
+    Write(sizedesc, 8);
+    WriteBE32(hash, s[0]);
+    WriteBE32(hash + 4, s[1]);
+    WriteBE32(hash + 8, s[2]);
+    WriteBE32(hash + 12, s[3]);
+    WriteBE32(hash + 16, s[4]);
+}
+
+CSHA1& CSHA1::Reset()
+{
+    bytes = 0;
+    sha1::Initialize(s);
+    return *this;
 }

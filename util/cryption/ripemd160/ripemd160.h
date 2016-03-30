@@ -1,12 +1,12 @@
 
-#ifndef CRYPTO_SHA1_H
-#define CRYPTO_SHA1_H
+#ifndef RIPEMD160_H
+#define RIPEMD160_H
 
 #include <stdint.h>
 #include <stdlib.h>
 
-/** A hasher class for SHA1. */
-class CSHA1
+/** A hasher class for RIPEMD-160. */
+class CRIPEMD160
 {
 private:
     uint32_t s[5];
@@ -16,10 +16,10 @@ private:
 public:
     static const size_t OUTPUT_SIZE = 20;
 
-    CSHA1();
-    CSHA1& Write(const unsigned char* data, size_t len);
+    CRIPEMD160();
+    CRIPEMD160& Write(const unsigned char* data, size_t len);
     void Finalize(unsigned char hash[OUTPUT_SIZE]);
-    CSHA1& Reset();
+    CRIPEMD160& Reset();
 };
 
-#endif // BITCOIN_CRYPTO_SHA1_H
+#endif 
