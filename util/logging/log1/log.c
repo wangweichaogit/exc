@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "log.h"
 
@@ -47,7 +48,8 @@ static int Error_OpenFile(int* pf)
 #ifdef WIN32
 	sprintf(fileName, "c:\\wjsmlog\\%s",DEBUG_FILE_);
 #else
-	sprintf(fileName, "%s/log/%s", getenv("pwd"), DEBUG_FILE_);
+	sprintf(fileName, "%s/%s", getenv("PWD") , DEBUG_FILE_);
+	//sprintf(fileName, "%s/log/%s",getenv("HOME") , DEBUG_FILE_);
 #endif
     
     *pf = open(fileName, O_WRONLY|O_CREAT|O_APPEND, 0666);
