@@ -1,0 +1,26 @@
+
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "comLib", "comLib.vcxproj", "{55A4072D-01EC-4B11-886D-F2B4050A2255}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testcomLib", "testcomLib\testcomLib.vcxproj", "{C2586706-0701-4DE4-AEC8-E9D07E33C780}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{55A4072D-01EC-4B11-886D-F2B4050A2255}.Debug|Win32.ActiveCfg = Debug|Win32
+		{55A4072D-01EC-4B11-886D-F2B4050A2255}.Debug|Win32.Build.0 = Debug|Win32
+		{55A4072D-01EC-4B11-886D-F2B4050A2255}.Release|Win32.ActiveCfg = Release|Win32
+		{55A4072D-01EC-4B11-886D-F2B4050A2255}.Release|Win32.Build.0 = Release|Win32
+		{C2586706-0701-4DE4-AEC8-E9D07E33C780}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C2586706-0701-4DE4-AEC8-E9D07E33C780}.Debug|Win32.Build.0 = Debug|Win32
+		{C2586706-0701-4DE4-AEC8-E9D07E33C780}.Release|Win32.ActiveCfg = Release|Win32
+		{C2586706-0701-4DE4-AEC8-E9D07E33C780}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

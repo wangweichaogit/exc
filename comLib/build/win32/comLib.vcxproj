@@ -1,0 +1,167 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{55A4072D-01EC-4B11-886D-F2B4050A2255}</ProjectGuid>
+    <RootNamespace>comLib</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)..\..\Bin_2010\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\Bin_2010</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\..\;$(SolutionDir)..\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;COMLIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImportLibrary>$(SolutionDir)..\..\Lib_2010\$(TargetName).lib</ImportLibrary>
+    </Link>
+    <PostBuildEvent>
+      <Command>move ..\..\..\Bin_2010\comLib.lib ..\..\lib
+del ..\..\..\Bin_2010\*.exp
+del ..\..\..\Bin_2010\*.ilk</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;COMLIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>..\..\..\;$(SolutionDir)..\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="..\..\cation.txt" />
+    <None Include="..\..\Makefile" />
+    <None Include="..\..\modify.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\DateTime.cpp" />
+    <ClCompile Include="..\..\GMRWLockImp.cpp" />
+    <ClCompile Include="..\..\IniFile.cpp" />
+    <ClCompile Include="..\..\Logger.cpp" />
+    <ClCompile Include="..\..\Logger_impl.cpp" />
+    <ClCompile Include="..\..\LogHelper.cpp" />
+    <ClCompile Include="..\..\SysUtil.cpp" />
+    <ClCompile Include="..\..\dhntimer\DHNTimer.cpp" />
+    <ClCompile Include="..\..\dhntimer\DHNTimerTask.cpp" />
+    <ClCompile Include="..\..\dhntimer\Time_Value.cpp" />
+    <ClCompile Include="..\..\sys\cJSON.cpp" />
+    <ClCompile Include="..\..\sys\getopt.cpp" />
+    <ClCompile Include="..\..\sys\gettimeofday.cpp" />
+    <ClCompile Include="..\..\sys\SystemStat.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\AtomicOp.h" />
+    <ClInclude Include="..\..\comdefine.h" />
+    <ClInclude Include="..\..\DateTime.h" />
+    <ClInclude Include="..\..\GMRWLockImp.h" />
+    <ClInclude Include="..\..\IniFile.h" />
+    <ClInclude Include="..\..\ios_generic.h" />
+    <ClInclude Include="..\..\IPerfDefine.h" />
+    <ClInclude Include="..\..\Logger.h" />
+    <ClInclude Include="..\..\Logger_impl.h" />
+    <ClInclude Include="..\..\Logger_type.h" />
+    <ClInclude Include="..\..\LogHelper.h" />
+    <ClInclude Include="..\..\Mutex.h" />
+    <ClInclude Include="..\..\ReadWriteLock.h" />
+    <ClInclude Include="..\..\SafeDeque.h" />
+    <ClInclude Include="..\..\SafeList.h" />
+    <ClInclude Include="..\..\SafeMap.h" />
+    <ClInclude Include="..\..\SafeQueue.h" />
+    <ClInclude Include="..\..\SafeSet.h" />
+    <ClInclude Include="..\..\Semaphore.h" />
+    <ClInclude Include="..\..\SingleEvent.h" />
+    <ClInclude Include="..\..\Stdafx.h" />
+    <ClInclude Include="..\..\SysUtil.h" />
+    <ClInclude Include="..\..\Thread.h" />
+    <ClInclude Include="..\..\WriteReadLock.h" />
+    <ClInclude Include="..\..\dhntimer\DHNTimer.h" />
+    <ClInclude Include="..\..\dhntimer\DHNTimerDefine.h" />
+    <ClInclude Include="..\..\dhntimer\DHNTimerQueue.h" />
+    <ClInclude Include="..\..\dhntimer\DHNTimerTask.h" />
+    <ClInclude Include="..\..\dhntimer\DHNTimerWheel.h" />
+    <ClInclude Include="..\..\dhntimer\DHNTimer_T.h" />
+    <ClInclude Include="..\..\dhntimer\Free_List.h" />
+    <ClInclude Include="..\..\dhntimer\SocketDefine.h" />
+    <ClInclude Include="..\..\dhntimer\Time_Value.h" />
+    <ClInclude Include="..\..\sys\atomic_ops.h" />
+    <ClInclude Include="..\..\sys\cJSON.h" />
+    <ClInclude Include="..\..\sys\getopt.h" />
+    <ClInclude Include="..\..\sys\gettimeofday.h" />
+    <ClInclude Include="..\..\sys\SystemStat.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

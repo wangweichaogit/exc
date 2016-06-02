@@ -1,0 +1,10 @@
+1，TryEnterCriticalSection编译报错
+------------------------------------------------------------------------------
+如果在include相应comLib头文件前include了<windows.h>，则可能会报错如下：
+“TryEnterCriticalSection”: 即使使用参数相关的查找，也未找到标识符
+
+原因是该函数只适于“#if(_WIN32_WINNT >= 0x0400)”条件下，而在include <windows.h>前没有定义"_WIN32_WINNT"；将comLib相关头文件放到最前可以解决该问题
+
+
+
+
